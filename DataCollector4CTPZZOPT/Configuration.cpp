@@ -145,7 +145,7 @@ int Configuration::Initialize()
 	int					nErrCode = 0;
     char				pszTmp[1024] = { 0 };
 
-	m_nMarketID = 16;
+	m_nMarketID = 10;
 	m_sExchangeID = "CZCE";
     ::GetModuleFileName( g_oModule, pszTmp, sizeof(pszTmp) );
     sPath = pszTmp;

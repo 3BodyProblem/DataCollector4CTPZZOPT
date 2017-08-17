@@ -80,11 +80,6 @@ protected:///< 自有方法函数
 	void					BreakOutWaitingResponse();
 
 	/**
-	 * @brief				根据代码判断商品类型
-	 */
-	int						JudgeKindFromSecurityID( char* pszCode, unsigned int nCodeLen = 9 ) const;
-
-	/**
 	 * @brief				从商品代码中取出执行日期
 	 */
 	int						ParseExerciseDateFromCode( char (&Code)[20] ) const;

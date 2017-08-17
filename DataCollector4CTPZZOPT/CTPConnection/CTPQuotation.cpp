@@ -296,11 +296,11 @@ void CTPQuotation::FlushQuotation( CThostFtdcDepthMarketDataField* pQuotationDat
 {
 	double							dRate = 1.;				///< 放大倍数
 	int								nSerial = 0;			///< 商品在码表的索引值
-	tagZZFutureReferenceData_LF117	tagName = { 0 };		///< 商品基础信息结构
-	tagZZFutureSnapData_HF119		tagSnapHF = { 0 };		///< 高速行情快照
-	tagZZFutureSnapData_LF118		tagSnapLF = { 0 };		///< 低速行情快照
-	tagZZFutureSnapBuySell_HF120	tagSnapBS = { 0 };		///< 档位信息
-	tagZZFutureMarketStatus_HF116	tagStatus = { 0 };		///< 市场状态信息
+	tagZZOptionReferenceData_LF145	tagName = { 0 };		///< 商品基础信息结构
+	tagZZOptionSnapData_HF147		tagSnapHF = { 0 };		///< 高速行情快照
+	tagZZOptionSnapData_LF146		tagSnapLF = { 0 };		///< 低速行情快照
+	tagZZOptionSnapBuySell_HF148	tagSnapBS = { 0 };		///< 档位信息
+	tagZZOptionMarketStatus_HF144	tagStatus = { 0 };		///< 市场状态信息
 	unsigned int					nSnapTradingDate = 0;	///< 快照交易日期
 
 	::strncpy( tagName.Code, pQuotationData->InstrumentID, sizeof(tagName.Code) );
@@ -308,7 +308,7 @@ void CTPQuotation::FlushQuotation( CThostFtdcDepthMarketDataField* pQuotationDat
 	::memcpy( tagSnapLF.Code, pQuotationData->InstrumentID, sizeof(tagSnapLF.Code) );
 	::memcpy( tagSnapBS.Code, pQuotationData->InstrumentID, sizeof(tagSnapBS.Code) );
 
-	if( (nSerial=QuoCollector::GetCollector()->OnQuery( 117, (char*)&tagName, sizeof(tagName) )) <= 0 )
+	if( (nSerial=QuoCollector::GetCollector()->OnQuery( 145, (char*)&tagName, sizeof(tagName) )) <= 0 )
 	{
 		return;
 	}
@@ -375,14 +375,13 @@ void CTPQuotation::FlushQuotation( CThostFtdcDepthMarketDataField* pQuotationDat
 	{	///< 更新日期+时间
 		::strcpy( tagStatus.Key, "mkstatus" );
 		tagStatus.MarketStatus = 1;
-		tagStatus.MarketDate = nSnapTradingDate;
 		tagStatus.MarketTime = nSnapUpdateTime;
-		QuoCollector::GetCollector()->OnData( 116, (char*)&tagStatus, sizeof(tagStatus), false );
+		QuoCollector::GetCollector()->OnData( 144, (char*)&tagStatus, sizeof(tagStatus), false );
 	}
 
-	QuoCollector::GetCollector()->OnData( 118, (char*)&tagSnapLF, sizeof(tagSnapLF), false );
-	QuoCollector::GetCollector()->OnData( 119, (char*)&tagSnapHF, sizeof(tagSnapHF), false );
-	QuoCollector::GetCollector()->OnData( 120, (char*)&tagSnapBS, sizeof(tagSnapBS), false );
+	QuoCollector::GetCollector()->OnData( 146, (char*)&tagSnapLF, sizeof(tagSnapLF), false );
+	QuoCollector::GetCollector()->OnData( 147, (char*)&tagSnapHF, sizeof(tagSnapHF), false );
+	QuoCollector::GetCollector()->OnData( 148, (char*)&tagSnapBS, sizeof(tagSnapBS), false );
 }
 
 void CTPQuotation::OnRspError( CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast )

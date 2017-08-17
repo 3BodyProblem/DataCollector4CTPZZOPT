@@ -1,3 +1,4 @@
+#include <math.h>
 #include <string>
 #include <algorithm>
 #include "CTPQuoImage.h"
@@ -24,7 +25,7 @@ int CTPQuoImage::GetRate( unsigned int nKind )
 {
 	if( m_mapRate.find( nKind ) == m_mapRate.end() )
 	{
-		return m_mapRate[nKind];
+		return ::pow( (double)10, (int)m_mapRate[nKind] );
 	}
 
 	return -1;
@@ -92,12 +93,13 @@ int CTPQuoImage::FreshCache()
 
 void CTPQuoImage::BuildBasicData()
 {
-	tagZZFutureMarketInfo_LF114		tagMkInfo = { 0 };
-	tagZZFutureMarketStatus_HF116	tagStatus = { 0 };
+	tagZZOptionMarketInfo_LF142		tagMkInfo = { 0 };
+	tagZZOptionMarketStatus_HF144	tagStatus = { 0 };
 
 	::strcpy( tagMkInfo.Key, "mkinfo" );
 	tagMkInfo.WareCount = m_mapBasicData.size();
 	tagMkInfo.MarketID = Configuration::GetConfig().GetMarketID();
+	tagMkInfo.MarketDate = DateTime::Now().DateToLong();
 
 	tagMkInfo.PeriodsCount = 4;					///< 交易时段信息设置
 	tagMkInfo.MarketPeriods[0][0] = 21*60;		///< 第一段，取夜盘的时段的最大范围
@@ -112,49 +114,39 @@ void CTPQuoImage::BuildBasicData()
 	///< 配置分类信息
 	tagMkInfo.KindCount = 4;
 	{
-		tagZZFutureKindDetail_LF115		tagKind = { 0 };
+		tagZZOptionKindDetail_LF143		tagKind = { 0 };
 
 		::strncpy( tagKind.KindName, "指数保留", 8 );
 		tagKind.PriceRate = 0;
 		tagKind.LotFactor = 0;
 		m_mapRate[m_mapRate.size()] = tagKind.PriceRate;
-		QuoCollector::GetCollector()->OnImage( 115, (char*)&tagKind, sizeof(tagKind), true );
+		QuoCollector::GetCollector()->OnImage( 143, (char*)&tagKind, sizeof(tagKind), true );
 	}
 	{
-		tagZZFutureKindDetail_LF115		tagKind = { 0 };
+		tagZZOptionKindDetail_LF143		tagKind = { 0 };
 
-		::strncpy( tagKind.KindName, "大连期指", 8 );
+		::strncpy( tagKind.KindName, "郑州期指", 8 );
 		tagKind.PriceRate = 2;
 		tagKind.LotFactor = 100;
 		m_mapRate[m_mapRate.size()] = tagKind.PriceRate;
-		QuoCollector::GetCollector()->OnImage( 115, (char*)&tagKind, sizeof(tagKind), true );
+		QuoCollector::GetCollector()->OnImage( 143, (char*)&tagKind, sizeof(tagKind), true );
 	}
 	{
-		tagZZFutureKindDetail_LF115		tagKind = { 0 };
+		tagZZOptionKindDetail_LF143		tagKind = { 0 };
 
-		::strncpy( tagKind.KindName, "大连合约", 8 );
+		::strncpy( tagKind.KindName, "郑州期权", 8 );
 		tagKind.PriceRate = 2;
 		tagKind.LotFactor = 100;
 		m_mapRate[m_mapRate.size()] = tagKind.PriceRate;
-		QuoCollector::GetCollector()->OnImage( 115, (char*)&tagKind, sizeof(tagKind), true );
-	}
-	{
-		tagZZFutureKindDetail_LF115		tagKind = { 0 };
-
-		::strncpy( tagKind.KindName, "大连期权", 8 );
-		tagKind.PriceRate = 2;
-		tagKind.LotFactor = 100;
-		m_mapRate[m_mapRate.size()] = tagKind.PriceRate;
-		QuoCollector::GetCollector()->OnImage( 115, (char*)&tagKind, sizeof(tagKind), true );
+		QuoCollector::GetCollector()->OnImage( 143, (char*)&tagKind, sizeof(tagKind), true );
 	}
 
 	::strcpy( tagStatus.Key, "mkstatus" );
 	tagStatus.MarketStatus = 0;
-	tagStatus.MarketDate = DateTime::Now().DateToLong();
 	tagStatus.MarketTime = DateTime::Now().TimeToLong();
 
-	QuoCollector::GetCollector()->OnImage( 114, (char*)&tagMkInfo, sizeof(tagMkInfo), true );
-	QuoCollector::GetCollector()->OnImage( 116, (char*)&tagStatus, sizeof(tagStatus), true );
+	QuoCollector::GetCollector()->OnImage( 142, (char*)&tagMkInfo, sizeof(tagMkInfo), true );
+	QuoCollector::GetCollector()->OnImage( 144, (char*)&tagStatus, sizeof(tagStatus), true );
 }
 
 int CTPQuoImage::FreeApi()
@@ -266,36 +258,6 @@ void CTPQuoImage::OnRspUserLogin( CThostFtdcRspUserLoginField *pRspUserLogin, CT
 	}
 }
 
-int CTPQuoImage::JudgeKindFromSecurityID( char* pszCode, unsigned int nCodeLen ) const
-{
-	if( NULL == pszCode || 0 > nCodeLen )
-	{
-		return -1;
-	}
-
-//	if( pszCode[5] == '\0' || pszCode[5] == ' ' )
-//		return -2;	///< 过滤上海期货中超短5位代码
-
-	if( ::strstr( pszCode, "&" ) != NULL )
-	{
-		return -3;	///< 为组合合约，需要过滤
-	}
-
-	///< 倒着判断三位字符是否有值
-	bool bPos1IsNone = (pszCode[nCodeLen-1] == ' ' || pszCode[nCodeLen-1] == '\0');
-	bool bPos2IsNone = (pszCode[nCodeLen-2] == ' ' || pszCode[nCodeLen-2] == '\0');
-	bool bPos3IsNone = (pszCode[nCodeLen-3] == ' ' || pszCode[nCodeLen-3] == '\0');
-
-	if( false == bPos1IsNone && false == bPos2IsNone && false == bPos3IsNone )
-	{
-		return 3;	///< 为Option
-	}
-	else
-	{
-		return 2;	///< 为Future
-	}
-}
-
 int CTPQuoImage::ParseExerciseDateFromCode( char (&Code)[20] ) const
 {
 	char			pszExerciseDate[12] = { 0 };			///< 行权日期
@@ -355,27 +317,22 @@ void CTPQuoImage::OnRspQryInstrument( CThostFtdcInstrumentField *pInstrument, CT
 	{
 		QuotationSync::CTPSyncSaver::GetHandle().SaveStaticData( *pInstrument );
 
-		if( false == m_bIsResponded )
+		if( false == m_bIsResponded && pInstrument->ProductClass == THOST_FTDC_PC_Options )
 		{	///< 判断为是否需要过滤的商品
 			CThostFtdcInstrumentField&		refSnap = *pInstrument;						///< 交易请求接口返回结构
 			CriticalLock					section( m_oLock );
-			tagZZFutureReferenceData_LF117	tagName = { 0 };							///< 商品基础信息结构
-			tagZZFutureSnapData_HF119		tagSnapHF = { 0 };							///< 高速行情快照
-			tagZZFutureSnapData_LF118		tagSnapLF = { 0 };							///< 低速行情快照
-			tagZZFutureSnapBuySell_HF120	tagSnapBS = { 0 };							///< 档位信息
+			tagZZOptionReferenceData_LF145	tagName = { 0 };							///< 商品基础信息结构
+			tagZZOptionSnapData_HF147		tagSnapHF = { 0 };							///< 高速行情快照
+			tagZZOptionSnapData_LF146		tagSnapLF = { 0 };							///< 低速行情快照
+			tagZZOptionSnapBuySell_HF148	tagSnapBS = { 0 };							///< 档位信息
 
-			m_mapBasicData[std::string(pInstrument->InstrumentID)] = *pInstrument;
 			::strncpy( tagName.Code, refSnap.InstrumentID, sizeof(tagName.Code) );		///< 商品代码
 			::memcpy( tagSnapHF.Code, refSnap.InstrumentID, sizeof(tagSnapHF.Code) );	///< 商品代码
 			::memcpy( tagSnapLF.Code, refSnap.InstrumentID, sizeof(tagSnapLF.Code) );	///< 商品代码
 			::memcpy( tagSnapBS.Code, refSnap.InstrumentID, sizeof(tagSnapBS.Code) );	///< 商品代码
 			::strncpy( tagName.Name, refSnap.InstrumentName, sizeof(tagName.Code) );	///< 商品名称
 
-			tagName.Kind = JudgeKindFromSecurityID( tagName.Code );						///< 期权的分类
-			if( tagName.Kind < 0 ) {
-				return;																	///< 需要过滤的情况
-			}
-
+			tagName.Kind = 2;
 			if( THOST_FTDC_CP_CallOptions == refSnap.OptionsType )
 			{
 				tagName.DerivativeType = 0;
@@ -402,21 +359,13 @@ void CTPQuoImage::OnRspQryInstrument( CThostFtdcInstrumentField *pInstrument, CT
 				tagName.LotSize = 1;													///< 手比率
 			}
 
-//			tagName.TypePeriodIdx = refMkRules[refMkID.ParsePreNameFromCode(tagName.Code)].nPeriodIdx;	///< 分类交易时间段位置
-/*			const DataRules::tagPeriods& oPeriod = refMkRules[tagName.TypePeriodIdx];
-			int	stime = ((oPeriod.nPeriod[0][0]/60)*100 + oPeriod.nPeriod[0][0]%60)*100;				///< 合约的交易时段的起始点
-			if( stime == EARLY_OPEN_TIME ) {
-				tagName.EarlyNightFlag = 1;
-			} else {
-				tagName.EarlyNightFlag = 2;
-			}*/
-
 			tagName.PriceTick = refSnap.PriceTick*m_mapRate[tagName.Kind]+0.5;							///< 行权价格(精确到厘) //[*放大倍数] 
 
-			QuoCollector::GetCollector()->OnImage( 117, (char*)&tagName, sizeof(tagName), bIsLast );
-			QuoCollector::GetCollector()->OnImage( 118, (char*)&tagSnapLF, sizeof(tagSnapLF), bIsLast );
-			QuoCollector::GetCollector()->OnImage( 119, (char*)&tagSnapHF, sizeof(tagSnapHF), bIsLast );
-			QuoCollector::GetCollector()->OnImage( 120, (char*)&tagSnapBS, sizeof(tagSnapBS), bIsLast );
+			m_mapBasicData[std::string(pInstrument->InstrumentID)] = *pInstrument;
+			QuoCollector::GetCollector()->OnImage( 145, (char*)&tagName, sizeof(tagName), bIsLast );
+			QuoCollector::GetCollector()->OnImage( 146, (char*)&tagSnapLF, sizeof(tagSnapLF), bIsLast );
+			QuoCollector::GetCollector()->OnImage( 147, (char*)&tagSnapHF, sizeof(tagSnapHF), bIsLast );
+			QuoCollector::GetCollector()->OnImage( 148, (char*)&tagSnapBS, sizeof(tagSnapBS), bIsLast );
 		}
 	}
 
