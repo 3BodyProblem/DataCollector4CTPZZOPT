@@ -23,7 +23,7 @@ CTPQuoImage::operator T_MAP_BASEDATA&()
 
 int CTPQuoImage::GetRate( unsigned int nKind )
 {
-	if( m_mapRate.find( nKind ) == m_mapRate.end() )
+	if( m_mapRate.find( nKind ) != m_mapRate.end() )
 	{
 		return ::pow( (double)10, (int)m_mapRate[nKind] );
 	}
