@@ -128,6 +128,7 @@ int ParseSvrConfig( inifile::IniFile& refIniFile, std::string sNodeName, CTPLink
 
 
 Configuration::Configuration()
+ : m_bBroadcastModel( false ), m_nBcBeginTime( 0 )
 {
 }
 
@@ -147,6 +148,7 @@ int Configuration::Initialize()
 
 	m_nMarketID = 10;
 	m_sExchangeID = "CZCE";
+	m_bBroadcastModel = false;
     ::GetModuleFileName( g_oModule, pszTmp, sizeof(pszTmp) );
     sPath = pszTmp;
     sPath = sPath.substr( 0, sPath.find(".dll") ) + ".ini";
@@ -162,6 +164,34 @@ int Configuration::Initialize()
 		QuoCollector::GetCollector()->OnLog( TLV_WARN, "Configuration::Initialize() : shutdown dump function." );
 	}
 
+	std::string	sBroadCastModel = oIniFile.getStringValue( std::string("SRV"), std::string("BroadcastModel"), nErrCode );
+	if( 0 == nErrCode )	{
+		if( sBroadCastModel == "1" )
+		{
+			m_bBroadcastModel = true;
+			QuoCollector::GetCollector()->OnLog( TLV_WARN, "Configuration::Initialize() : ... Enter [Broadcase Model] ... !!! " );
+		}
+	}
+
+	if( true == m_bBroadcastModel )
+	{
+		m_sBcTradeFile = oIniFile.getStringValue( std::string("SRV"), std::string("BroadcastTradeFile"), nErrCode );
+		if( 0 != nErrCode )	{
+			QuoCollector::GetCollector()->OnLog( TLV_WARN, "Configuration::Initialize() : invalid broadcast (trade) file." );
+		}
+
+		m_sBcQuotationFile = oIniFile.getStringValue( std::string("SRV"), std::string("BroadcastQuotationFile"), nErrCode );
+		if( 0 != nErrCode )	{
+			QuoCollector::GetCollector()->OnLog( TLV_WARN, "Configuration::Initialize() : invalid broadcast (quotation) file." );
+		}
+
+		m_nBcBeginTime = oIniFile.getIntValue( std::string("SRV"), std::string("BroadcastBeginTime"), nErrCode );
+		if( 0 != nErrCode )	{
+			m_nBcBeginTime = 0xffffffff;
+			QuoCollector::GetCollector()->OnLog( TLV_WARN, "Configuration::Initialize() : Topspeed Mode...!" );
+		}
+	}
+
 	if( 0 != ParseSvrConfig( oIniFile, "HQSRV", m_oHQConfigList ) )
 	{
 		return -2;
@@ -173,6 +203,26 @@ int Configuration::Initialize()
 	}
 
 	return 0;
+}
+
+unsigned int Configuration::GetBroadcastBeginTime() const
+{
+	return m_nBcBeginTime;
+}
+
+std::string Configuration::GetTradeFilePath() const
+{
+	return m_sBcTradeFile;
+}
+
+std::string Configuration::GetQuotationFilePath() const
+{
+	return m_sBcQuotationFile;
+}
+
+bool Configuration::IsBroadcastModel() const
+{
+	return m_bBroadcastModel;
 }
 
 unsigned int Configuration::GetMarketID() const

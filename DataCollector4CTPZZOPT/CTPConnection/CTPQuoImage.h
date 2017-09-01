@@ -63,6 +63,14 @@ public:
 	 */
 	static int				GetRate( unsigned int nKind );
 
+	/**
+	 * @brief				加载落盘数据
+	 * @param[in]			sFilePath			落盘文件路径
+	 * @param[in]			bEchoOnly			是否需要加载的数据进行显示
+	 * @return				>=0					成功
+	 */
+	int						LoadDataFile( std::string sFilePath, bool bEchoOnly = false );
+
 protected:///< 自有方法函数
 	/**
 	 * @brief				发送登录请求包
@@ -99,6 +107,8 @@ protected:
 	static T_MAP_RATE		m_mapRate;					///< 各分类的放大倍数
 	T_MAP_BASEDATA			m_mapBasicData;				///< 市场商品基础数据集合
 	CriticalObject			m_oLock;					///< 临界区对象
+protected:
+	QuotationRecorder		m_oDataRecorder;			///< 行情落盘对象
 };
 
 
